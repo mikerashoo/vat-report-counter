@@ -1,0 +1,19 @@
+{
+  "name": "vat-counter-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^15.3.0",
+    "electron-packager": "^15.4.0"
+  },
+  "dependencies": {
+    "node-php-server": "^0.1.2"
+  }
+}
