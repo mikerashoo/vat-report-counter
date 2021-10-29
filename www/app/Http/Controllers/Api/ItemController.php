@@ -16,6 +16,30 @@ class ItemController extends Controller
         return Item::all();
     }
 
+    public function save(Request $request)
+    {
+        $starting_date = $this->getStartingDateFromLastReport();
+        $end_date = Carbon::now();
+        $item = new Item;
+        $item->name = $request->name;
+        $item->code = $request->code;
+        $item->remaining = $request->remaining;
+        $item->save();
+        return $this->getItemTransactionValues($item->id, $starting_date, $end_date);
+    }
+
+    public function update(Request $request)
+    {
+
+    }
+
+    public function delete($id)
+    {
+        $item = Item::find($id);
+        $item->status = 0;
+        $item->save();
+    }
+
     public function itemsFromLastReport()
     {
         $starting_date = $this->getStartingDateFromLastReport();
@@ -30,27 +54,36 @@ class ItemController extends Controller
     public function getItemTransactionValues($item_id, $starting_date, $end_date)
     {
         $item = Item::find($item_id);
-        $transactions = Transaction::where('item_id', $item_id)->whereBetween('created_at', [$starting_date, $end_date])->get();
-
-        $sell_count = 0;
-        $sell_average_price = 0;
-        $buy_count = 0;
-        $buy_average_price = 0;
-        foreach ($transactions as $key => $transaction) {
-            if($transaction->type == 'sell'){
-                $sell_count += $transaction->quantity;
-                $sell_average_price += $transaction->average_price;
-            }
-            else if($transaction->type == 'buy'){
-                $buy_count += $transaction->quantity;
-                $buy_average_price += $transaction->average_price;
+        $item_transactions = Transaction::where('item_id', $item_id)->get();
+        $transactions = [];
+        foreach($item_transactions as $transaction){
+            $carbon_created_at = new Carbon($transaction->created_at);
+            if($carbon_created_at >= new Carbon($starting_date) && $carbon_created_at <= new Carbon($end_date)){
+                array_push($transactions, $transaction);
             }
         }
 
+        $sell_count = 0;
+        $sell_amount = 0;
+
+        $buy_count = 0;
+        $buy_amount = 0;
+        foreach ($transactions as $key => $transaction) {
+            if($transaction->type == 'sell'){
+                $sell_count += $transaction->quantity;
+                $sell_amount += $transaction->total_price;
+            }
+            else if($transaction->type == 'buy'){
+                $buy_amount += $transaction->total_price;
+                $buy_count += $transaction->quantity;
+            }
+        }
+
+        $item->sell_amount = $sell_amount;
         $item->sell_count = $sell_count;
         $item->buy_count = $buy_count;
-        $item->sell_average_price = $sell_average_price;
-        $item->buy_average_price = $buy_average_price;
+        $item->buy_amount = $buy_amount;
+        $item->transactions = $transactions;
         return $item;
     }
 
@@ -59,7 +92,6 @@ class ItemController extends Controller
         $report = $this->getLastReport();
         $starting_date = '';
         if($report){
-            $starting_date = "no report";
             $starting_date = $report->end_date;
         }
         else {
@@ -69,7 +101,6 @@ class ItemController extends Controller
             }
             else {
                 $starting_date = Carbon::now();
-                $starting_date = "now ";
             }
         }
         return $starting_date;
@@ -80,21 +111,6 @@ class ItemController extends Controller
         return Report::orderBy('created_at', 'desc')->first();
     }
 
-    public function save(Request $request)
-    {
-        $item = new Item;
-        $item->name = $request->name;
-        $item->code = $request->code;
-        $item->remaining = $request->remaining;
-        $item->save();
-        return Item::find($item->id);
-    }
-
-    public function update(Request $request)
-    {
-
-    }
-
     public function saveTransaction(Request $request){
         $transaction = new Transaction;
         $transaction->item_id = $request->item_id;
@@ -102,6 +118,7 @@ class ItemController extends Controller
         $transaction->average_price = $request->average_price;
         $transaction->total_price = $request->total_price;
         $transaction->type = $request->type;
+        $transaction->save();
 
         $item = Item::find($request->item_id);
         $remaining = $item->remaining;
@@ -109,6 +126,9 @@ class ItemController extends Controller
             $remaining -= $request->quantity;
         }
         else {
+            $transaction->fs_no = $request->fs_no;
+            $transaction->registered_date = $request->registered_date;
+            $transaction->save();
             $remaining += $request->quantity;
         }
         $item->remaining = $remaining;
@@ -116,11 +136,5 @@ class ItemController extends Controller
         return Transaction::orderBy('created_at', 'desc')->first();
     }
 
-    public function delete($id)
-    {
-        $item = Item::find($id);
-        $item->status = 0;
-        $item->save();
-    }
 
 }

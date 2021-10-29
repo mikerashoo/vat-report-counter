@@ -20,6 +20,11 @@
             body {
                 font-family: 'Nunito';
             }
+
+            #title_text{
+                font-size: 2em;
+            }
+
         </style>
     </head>
     <body class="antialiased">
@@ -33,8 +38,11 @@
                         </g>
                     </svg>  --}}
                     <div class="text-center">
-                    <img src="{{ asset('images/amare-store.png') }}" />
-                    <h1>Managing vat smartly</h1>
+                    <h1 id="title_text"> SMART VAT MANAGER </h1>
+                    <h3>
+                        <b>Accounting and Tax Preparation For Your Business.
+                    </b>
+                    </h3>
                     </div>
                 </div>
                 @guest
@@ -48,11 +56,10 @@
                     <form method="POST" action="{{ route('login') }}">
                         @csrf
 
-                        <div class="form-group row">
+                        <!-- <div class="form-group row">
                             <label for="user_name" class="col-md-4 col-form-label text-md-right">{{ __('User name') }}</label>
 
                             <div class="col-md-6">
-                                <input id="user_name" type="text" class="form-control @error('user_name') is-invalid @enderror" name="user_name" value="{{ old('user_name') }}" required autocomplete="user_name" autofocus>
 
                                 @error('user_name')
                                     <span class="invalid-feedback" role="alert">
@@ -60,7 +67,9 @@
                                     </span>
                                 @enderror
                             </div>
-                        </div>
+                        </div> -->
+                        <input id="user_name" type="hidden" value={{ config('app.user_name', 'minalu') }} class="form-control @error('user_name') is-invalid @enderror" name="user_name" value="{{ old('user_name') }}" required autocomplete="user_name" autofocus>
+
 
                         <div class="form-group row">
                             <label for="password" class="col-md-4 col-form-label text-md-right">{{ __('Password') }}</label>

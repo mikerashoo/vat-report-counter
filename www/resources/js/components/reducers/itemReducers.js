@@ -73,7 +73,6 @@ const ItemReducers = (state = INITIAL_STATE, action) => {
             }
 
         case ItemActionConstants.SAVE_ITEM_ERROR_ACTION:
-            console.log("ON reducer error", action.error);
             return {
                 ...state,
                 items: {

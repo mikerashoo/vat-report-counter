@@ -13,7 +13,8 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Amare Store Management'),
+    'name' => env('APP_NAME', 'Werkama-Vat'),
+    'user_name' => env('USER_NAME', 'minalu'),
 
     /*
     |--------------------------------------------------------------------------

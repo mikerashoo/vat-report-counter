@@ -4,6 +4,7 @@ import '../styles/home.css'
 import NewItemForm from '../views/NewItemForm';
 import ItemList from '../views/ItemList';
 import NewTransactionForm from '../views/NewTransactionForm';
+import { PurchaseForm } from '../views/PurchaseForm';
 const {TabPane} = Tabs;
 function HomePage() {
 
@@ -19,13 +20,13 @@ function HomePage() {
         <div className="card-container">
             <Tabs defaultActiveKey={1} centered tabBarStyle={{ padding: 5, backgroundColor: '#1890ff'}} type="card">
 
-                <TabPane key="1" tabKey="1" tab="የእቃ ሽያጭ">
+                <TabPane key="1" tabKey="1" tab="Register sell">
                     <NewTransactionForm type="sell" />
                 </TabPane>
-                <TabPane key="2" tabKey="2" tab="የእቃ ግዥ">
-                    <NewTransactionForm type="buy" />
+                <TabPane key="2" tabKey="2" tab="Purchase">
+                    <PurchaseForm type="buy" />
                 </TabPane>
-                <TabPane key="3" tabKey="3" tab="አድስ እቃ">
+                <TabPane key="3" tabKey="3" tab="New Item">
                     <NewItemForm  />
                 </TabPane>
             </Tabs>

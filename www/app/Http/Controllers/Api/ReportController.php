@@ -3,77 +3,83 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Item;
-use App\Models\ItemCategory;
+use Illuminate\Http\Request;
+use App\Models\Report;
 use App\Models\Transaction;
-use App\Models\Sell;
-use App\Models\Customer;
-use App\Models\Loan;
-use App\Models\LoanPayment;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
-    public function transactions()
-    { 
-        $transactions = Transaction::orderBy('created_at', 'desc')->whereDate('created_at', Carbon::today())->get();
-        foreach ($transactions as $transaction) {
-            $transaction->item;
+     public function getAll()
+     {
+        return Report::orderBy('created_at', 'desc')->get();
+     }
+
+     public function save(Request $request)
+     {
+        $report = new Report;
+        $report->starting_date = $request->starting_date;
+        if($report->end_date){
+            $report->end_date = $report->end_date;
         }
-        return $transactions;
-    }   
+        else {
+            $report->end_date = Carbon::now()->toDateTimeString();
+        }
+        $report->total_sell = $request->total_sell;
+        $report->total_buy = $request->total_buy;
+        $report->item_count = $request->item_count;
+        $report->save();
+        return Report::find($report->id);
+     }
 
-    public function SellTransactionsOnDate($date)
+     public function reportDetail($report_id)
+     {
+        $report = Report::find($report_id);
+        $items = Item::all();
+        foreach($items as $key => $item){
+            $items[$key] = $this->getItemTransactionValues($item->id, $report->starting_date, $report->end_date);
+        }
+
+        $report->items = $items;
+        return $report;
+     }
+
+
+    public function getItemTransactionValues($item_id, $starting_date, $end_date)
     {
-        $items = Item::all(); 
-        foreach ($items as $item) {
-            $transactions = Transaction::ofType('out')->where('item_id', '=', $item->id)->where('price','>', '0')->whereDate('created_at', $date)->get();
-            $sell_quantity = 0;
-            $sell_price = 0;
-
-            foreach ($transactions as $transaction) {
-                    $sell_quantity += $transaction->quantity;
-                    $sell_price += ($transaction->quantity * $transaction->price);
+        $item = Item::find($item_id);
+        $item_transactions = Transaction::where('item_id', $item_id)->get();
+        $transactions = [];
+        foreach($item_transactions as $transaction){
+            $carbon_created_at = new Carbon($transaction->created_at);
+            if($carbon_created_at >= new Carbon($starting_date) && $carbon_created_at <= new Carbon($end_date)){
+                array_push($transactions, $transaction);
             }
-
-            $item->transactions = $transactions;
-            $item->sell_quantity = $sell_quantity;
-            $item->sell_price = $sell_price;
         }
-        return $items;
-    }
- 
 
-    public function SellsOnDate($date)
-    {
-        $sells = Sell::with('transactions', 'customer', 'loan')->orderBy('created_at', 'DESC')->whereDate('created_at', $date)->get(); 
-        foreach ($sells as $sell) {
-            foreach ($sell->transactions as $transact) {
-                $transact->item;
+        $sell_count = 0;
+        $sell_amount = 0;
+
+        $buy_count = 0;
+        $buy_amount = 0;
+        foreach ($transactions as $key => $transaction) {
+            if($transaction->type == 'sell'){
+                $sell_count += $transaction->quantity;
+                $sell_amount += $transaction->total_price;
+            }
+            else if($transaction->type == 'buy'){
+                $buy_amount += $transaction->total_price;
+                $buy_count += $transaction->quantity;
             }
         }
-        return $sells;
+
+        $item->sell_amount = $sell_amount;
+        $item->sell_count = $sell_count;
+        $item->buy_count = $buy_count;
+        $item->buy_amount = $buy_amount;
+        $item->transactions = $transactions;
+        return $item;
     }
-
-    public function deleteSell($id)
-    {
-        $sell = Sell::find($id);
-        foreach ($sell->transactions as $trans) {
-            $transaction = Transaction::find($trans->id);
-            $item_id = $transaction->item_id;
-            $quantity = $transaction->quantity;
-            $item = Item::find($item_id);
-            $item->remaining = $item->remaining += $quantity;
-            $item->save();
-            $transaction->delete();
-
-        }
-        $loan = $sell->loan;
-        if($loan && $loan->id){
-            $_loan = Loan::find($loan->id);
-            $_loan->delete();
-        }
-        return $sell->delete();
-    } 
 }

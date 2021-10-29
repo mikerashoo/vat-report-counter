@@ -12,3 +12,5 @@ www/Homestead.json
 www/Homestead.yaml
 www/npm-debug.log
 www/yarn-error.log
+
+out/

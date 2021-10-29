@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react'
-import { Card, DatePicker, Input, Table, Space, Button, Row, Col } from 'antd'
+import { Card, DatePicker, Input, Table, Space, Button, Row, Col, Popconfirm, message } from 'antd'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchItemsAction, fetchItemsFromLastReportAction, getStartingDateAction } from '../actions/itemActions';
+import { fetchItemsFromLastReportAction, getStartingDateAction } from '../actions/itemActions';
 import moment from 'moment'
+import {Link, NavLink} from 'react-router-dom'
 import Column from 'rc-table/lib/sugar/Column';
 import ColumnGroup from 'rc-table/lib/sugar/ColumnGroup';
 import {SearchOutlined, RightOutlined, CheckOutlined, CheckCircleOutlined} from '@ant-design/icons'
+import { saveReportAction } from '../actions/reportActions';
 const {RangePicker} = DatePicker;
 function ItemList() {
-    const _items = useSelector(state => state.items);
+    const items_state = useSelector(state => state.items_state);
+    const reports_state = useSelector(state => state.reports_state);
     const dispatch = useDispatch();
     useEffect(() => {
-        if(!_items.starting_date){
+        if(!items_state.starting_date){
             dispatch(fetchItemsFromLastReportAction());
             dispatch(getStartingDateAction());
         }
@@ -20,7 +23,29 @@ function ItemList() {
 
     const [searchedText, setSearchedText] = useState('');
     const [searchedColumn, setSearchedColumn] = useState('');
+    const [endDate, setendDate] = useState(null);
+    const getTotals = () => {
+        let buy_count = 0;
+        let buy_total = 0;
+        let sell_count = 0;
+        let sell_total = 0;
+        let total_remaining = 0;
+        items_state.items.data.forEach(item => {
+            buy_count += item.buy_count;
+            buy_total += item.buy_amount;
+            sell_count += item.sell_count;
+            sell_total += item.sell_amount;
+            total_remaining += parseInt(item.remaining);
+        });
 
+        return {
+            buy_count,
+            buy_total,
+            sell_count,
+            sell_total,
+            total_remaining
+        }
+    }
 
     const getColumnSearchProps = dataIndex => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
@@ -99,46 +124,108 @@ function ItemList() {
         setSearchedText('');
       };
 
+
+      const saveReport = () => {
+          const total = getTotals();
+          const report = {
+              starting_date: items_state.starting_date,
+              end_date: endDate,
+              total_buy: total.buy_total,
+              total_sell: total.sell_total,
+              item_count: items_state.items.data.length
+          }
+          dispatch(saveReportAction(report));
+      }
+
+
+    useEffect(() => {
+        if(reports_state.is_save_successful){
+            message.success({content: 'መረጃው በትክክል ተመዝግቧል።', key: 'save_item_message'});
+            dispatch(fetchItemsFromLastReportAction());
+            dispatch(getStartingDateAction());
+        }
+    }, [reports_state.is_save_successful]);
+
+
     return (
         <Card title={<Row>
-                <Col span={8}>
-                <b>የእቃዎች ዝርዝር </b>
+                <Col span={6}>
+                <b style={{color: 'white'}}>Items in store </b>
+
                 </Col>
-                <Col span={16}>
-                <div>
-                    <DatePicker />
+                <Col span={18}>
+                <div className="text-right">
+                    <DatePicker size="small" />
                     <span className="mx-4">
-                    <RangePicker />
+                    <RangePicker size="small" />
                     </span>
+                    <Popconfirm
+                title="Are you sure you want to save report?"
+                cancelText="Cancel"
+                okText="Yes save!"
+                onConfirm={saveReport}>
+
+                <Button type="primary" size="small" style={{backgroundColor: 'deeppink', borderColor:'deeppink', color: 'white'}}>Report </Button>
+                </Popconfirm>
                 </div>
+
                 </Col>
             </Row>} hoverable headStyle={{backgroundColor: "#1890ff", border: 0 }}>
-            {/* <div>
-                <p><b>Filter area</b></p>
 
-            </div> */}
+            {items_state.starting_date &&
+            <Row>
+                <Col span={6}>
+
+                </Col>
+                <Col span={18}>
+                <div className="text-right text-success my-2">
+
+                <b><CheckCircleOutlined /> Last report {moment(items_state.starting_date).utc().local().format("dddd, MMMM Do YYYY, h:mm:ss a")}</b>
 
 
-            {_items.starting_date && <div className="text-right text-success my-2"> <b><CheckCircleOutlined /> Last report {moment(_items.starting_date).fromNow()}</b></div> }
+
+            </div>
+                </Col>
+            </Row>
+          }
         <Table
-            loading={_items.items.loading}
-            dataSource={_items.items.data}
+            loading={items_state.items.loading}
+            dataSource={items_state.items.data}
             bordered
+            size="small"
             rowClassName={(record, index) => index % 2 === 0 ? 'table-row-light' :  'table-row-dark'}
-            rowKey="id">
-                <Column title="#" key="id" render={(id, item, index) => <>{index + 1}</>} />
-                <Column title="እቃ" dataIndex="name" {...getColumnSearchProps('name')} onFilter={(value, record) => record.name.indexOf(value) === 0} render={ (name, item) => <>{item.name} <i><small>{item.code }</small> </i></>} />
-                <ColumnGroup title="የተገዛ">
-                    <Column title="ብዛት" sorter={(a, b) => a.buy_count - b.buy_count} dataIndex="buy_count" render={(buy_count, item) => <>{buy_count == 0 ? "-" : buy_count}</>} />
-                    <Column title="የአንዱ ዋጋ" dataIndex="buy_average_price" render={(buy_average_price, item) => <>{buy_average_price == 0 ? "-" : buy_average_price}</>}/>
-                    <Column title="አጠቃላይ ዋጋ" render={(item) => <>{item.buy_count * item.buy_average_price == 0 ? "-" : item.buy_count * item.buy_average_price}</>} />
+            rowKey="id"
+            summary={pageData => {
+                return <>
+                    <Table.Summary.Row>
+                        <Table.Summary.Cell>#</Table.Summary.Cell>
+                        <Table.Summary.Cell>Tota;</Table.Summary.Cell>
+                        <Table.Summary.Cell>{getTotals().buy_count}</Table.Summary.Cell>
+                        <Table.Summary.Cell>{getTotals().buy_count == 0 ? 0 : parseFloat(getTotals().buy_total/getTotals().buy_count).toFixed(2)}</Table.Summary.Cell>
+                        <Table.Summary.Cell>{parseFloat(getTotals().buy_total).toFixed(2)}</Table.Summary.Cell>
+                        <Table.Summary.Cell>{getTotals().sell_count}</Table.Summary.Cell>
+                        <Table.Summary.Cell>{getTotals().sell_count == 0 ? 0 : parseFloat(getTotals().sell_total/getTotals().sell_count).toFixed(2)}</Table.Summary.Cell>
+                        <Table.Summary.Cell>{parseFloat(getTotals().sell_total).toFixed(2)}</Table.Summary.Cell>
+                        <Table.Summary.Cell>{getTotals().total_remaining}</Table.Summary.Cell>
+                    </Table.Summary.Row>
+                </>
+            }}
+            >
+                 <Column title="#" render={(id, item, key) => <>{key + 1} </>} key="id" />
+                            <Column title="Item" key="starting_date" render={(item)=> <>{item.name}</>} />
+                            {/* <Column title="actions" render={(item) => <><Button type="link" onClick={() =>showDetail(item.id)}><UnorderedListOutlined /></Button> <Button type="link" danger><DeleteOutlined  /></Button></>} /> */}
+                            <ColumnGroup title="Purchased">
+                    <Column title="Quantity" sorter={(a, b) => a.buy_count - b.buy_count} dataIndex="buy_count" render={(buy_count, item) => <>{buy_count == 0 ? "-" : buy_count}</>} />
+                    <Column title="Per price" render={(item) => <>{item.buy_count == 0 ? "-" : parseFloat(item.buy_amount/item.buy_count).toFixed(2)}</>}/>
+                    <Column title="Total price" dataIndex="buy_amount"  render={(total, item) => <>{total == 0 ? "-" : parseFloat(total).toFixed(2)}</>} />
                 </ColumnGroup>
-                <ColumnGroup title="የተሸጠ">
-                    <Column title="ብዛት" sorter={(a, b) => a.buy_count - b.buy_count} dataIndex="sell_count" render={(sell_count, item) => <>{sell_count == 0 ? "-" : sell_count}</>} />
-                    <Column title="የአንዱ ዋጋ" dataIndex="sell_average_price" render={(sell_average_price, item) => <>{sell_average_price == 0 ? "-" : sell_average_price}</>} />
-                    <Column title="አጠቃላይ ዋጋ" render={(item) => <>{item.sell_count * item.sell_average_price == 0 ? "-" : item.sell_count * item.sell_average_price}</>} />
+                <ColumnGroup title="Sell">
+                    <Column title="Quantity" sorter={(a, b) => a.sell_count - b.sell_count} dataIndex="sell_count" render={(sell_count, item) => <>{sell_count == 0 ? "-" : sell_count}</>} />
+                    <Column title="Per price" render={(item) => <>{item.sell_count == 0 ? "-" : parseFloat(item.sell_amount / item.sell_count).toFixed(2)}</>} />
+                    <Column title="Total price" dataIndex="sell_amount" render={(total, item) => <>{total == 0 ? "-" : parseFloat(total).toFixed(2)}</>} />
                 </ColumnGroup>
-                <Column title='ቀር' dataIndex='remaining' sorter={(a, b) => a.remaining - b.remaining} render={(remaining, item) => <>{parseInt(remaining)}</>} />
+                <Column title='Remaining' dataIndex='remaining' sorter={(a, b) => a.remaining - b.remaining} render={(remaining, item) => <>{parseInt(remaining)}</>} />
+
             </Table>
         </Card>
     )

@@ -20,6 +20,8 @@ class CreateTransactionsTable extends Migration
             $table->double('quantity');
             $table->double('average_price')->nullable();
             $table->double('total_price')->nullable();
+            $table->string('fs_no')->nullable();
+            $table->date('registered_date')->nullable();
             $table->timestamps();
         });
     }

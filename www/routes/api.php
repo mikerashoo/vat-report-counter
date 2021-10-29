@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\ItemController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,13 +22,19 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::get('/users', [App\Http\Controllers\Api\UserController::class, 'index']);
 
 Route::group(['prefix' => 'items'], function () {
-    Route::get('/', [App\Http\Controllers\Api\ItemController::class, 'items']);
-    Route::get('detail/{id}', [App\Http\Controllers\Api\ItemController::class, 'categoryDetail']);
-    Route::post('save', [App\Http\Controllers\Api\ItemController::class, 'save']);
-    Route::post('update', [App\Http\Controllers\Api\ItemController::class, 'update']);
-    Route::delete('delete/{id}', [App\Http\Controllers\Api\ItemController::class, 'delete']);
-    Route::get('/last_report', [App\Http\Controllers\Api\ItemController::class, 'getLastReport']);
-    Route::get('/items_from_last_report', [App\Http\Controllers\Api\ItemController::class, 'itemsFromLastReport']);
-    Route::get('/last_starting_date', [App\Http\Controllers\Api\ItemController::class, 'getStartingDateFromLastReport']);
-    Route::post('/transaction', [App\Http\Controllers\Api\ItemController::class, 'saveTransaction']);
+    Route::get('/', [ItemController::class, 'items']);
+    Route::get('detail/{id}', [ItemController::class, 'categoryDetail']);
+    Route::post('save', [ItemController::class, 'save']);
+    Route::post('update', [ItemController::class, 'update']);
+    Route::delete('delete/{id}', [ItemController::class, 'delete']);
+    Route::get('/last_report', [ItemController::class, 'getLastReport']);
+    Route::get('/items_from_last_report', [ItemController::class, 'itemsFromLastReport']);
+    Route::get('/last_starting_date', [ItemController::class, 'getStartingDateFromLastReport']);
+    Route::post('/transaction', [ItemController::class, 'saveTransaction']);
+});
+
+Route::group(['prefix' => 'reports'], function() {
+    Route::get('/', [ReportController::class, 'getAll']);
+    Route::get('/{id}', [ReportController::class, 'reportDetail']);
+    Route::post('/save', [ReportController::class, 'save']);
 });
