@@ -111,6 +111,10 @@ class ItemController extends Controller
         return Report::orderBy('created_at', 'desc')->first();
     }
 
+    public function saveSell(Request $request)
+    {
+        # code...
+    }
     public function saveTransaction(Request $request){
         $transaction = new Transaction;
         $transaction->item_id = $request->item_id;

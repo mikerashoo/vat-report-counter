@@ -49,6 +49,34 @@ export const saveTransactionSuccessAction = () => ({
 export const saveTransactionErrorAction = (error) => ({
     type: ItemActionConstants.SAVE_ITEM_TRANSACTIONS_ERROR_ACTION,
     error
-})
+});
+
+export const showNewItemModalAction = () => ({
+    type: ItemActionConstants.SHOW_NEW_ITEM_MODAL_ACTION
+});
+
+export const hideNewItemModalAction = () => ({
+  type: ItemActionConstants.HIDE_NEW_ITEM_MODAL_ACTION,
+});
+
+export const showItemSellAction = (item) => ({
+  type: ItemActionConstants.SHOW_ITEM_SELL_ACTION,
+  item
+});
+
+export const hideItemSellAction = () => ({
+  type: ItemActionConstants.HIDE_ITEM_SELL_ACTION
+});
+
+export const showItemPurchaseAction = () => ({
+  type: ItemActionConstants.SHOW_ITEM_PURCHASE_ACTION,
+});
+
+export const hideItemPurchaseAction = () => ({
+  type: ItemActionConstants.HIDE_ITEM_PURCHASE_ACTION
+});
+
+
+
 
 

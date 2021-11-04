@@ -19,7 +19,11 @@ const INITIAL_STATE = {
         is_success: false
     },
     table_title: "ከመጨርሻው ረፖርት ጀምሮ",
-    starting_date: ""
+    starting_date: "",
+    is_new_item_modal_visible: false,
+    is_item_sell_modal_visible: false,
+    is_purchase_information_modal_visible: false,
+    selected_item: null
 };
 
 const ItemReducers = (state = INITIAL_STATE, action) => {
@@ -34,7 +38,10 @@ const ItemReducers = (state = INITIAL_STATE, action) => {
                 },
                 new_item: {
                     ...state.new_item
-                }
+                },
+                is_new_item_modal_visible: false,
+                is_item_sell_modal_visible: false,
+                selected_item: null
             }
 
         case ItemActionConstants.SHOW_ITEMS_ACTION:
@@ -102,7 +109,8 @@ const ItemReducers = (state = INITIAL_STATE, action) => {
                     ...state.new_item,
                     loading: false,
                     error: false
-                }
+                },
+                is_new_item_modal_visible: false
             }
 
         case ItemActionConstants.SET_STARTING_DATE_FROM_LAST_REPORT:
@@ -118,7 +126,9 @@ const ItemReducers = (state = INITIAL_STATE, action) => {
                     ...state.new_transaction,
                     loading: true,
                     is_success: false
-                }
+                },
+                is_item_sell_modal_visible: false,
+                selected_item: null
             }
 
         case ItemActionConstants.SAVE_ITEM_TRANSACTIONS_SUCCESS_ACTION:
@@ -129,8 +139,13 @@ const ItemReducers = (state = INITIAL_STATE, action) => {
                     loading: false,
                     error: false,
                     is_success: true
-                }
+                },
+                selected_item: null,
+                is_item_sell_modal_visible: false,
+                is_new_item_modal_visible: false,
+                is_purchase_information_modal_visible: false,
             }
+
         case ItemActionConstants.SAVE_ITEM_TRANSACTIONS_ERROR_ACTION:
             message.error({content: 'መረጃው በትክክል አልተመዘገበም', key: 'save_item_message'});
             return {
@@ -142,6 +157,49 @@ const ItemReducers = (state = INITIAL_STATE, action) => {
                     is_success: false
                 }
             }
+
+        case ItemActionConstants.SHOW_NEW_ITEM_MODAL_ACTION:
+            return {
+                ...state,
+                is_new_item_modal_visible: true
+            }
+
+        case ItemActionConstants.HIDE_NEW_ITEM_MODAL_ACTION:
+            return {
+                ...state,
+                is_new_item_modal_visible: false
+            }
+
+
+        case ItemActionConstants.SHOW_ITEM_SELL_ACTION:
+            return {
+                ...state,
+                is_item_sell_modal_visible: true,
+                selected_item: action.item
+            }
+
+        case ItemActionConstants.HIDE_ITEM_SELL_ACTION:
+            return {
+                ...state,
+                is_item_sell_modal_visible: false,
+                selected_item: null
+            }
+
+        case ItemActionConstants.SHOW_ITEM_PURCHASE_ACTION:
+            return {
+                ...state,
+                is_purchase_information_modal_visible: true,
+                selected_item: action.item
+            }
+
+        case ItemActionConstants.HIDE_ITEM_PURCHASE_ACTION:
+            return {
+                ...state,
+                is_purchase_information_modal_visible: false,
+                selected_item: null
+            }
+
+
 
         default:
             return state;

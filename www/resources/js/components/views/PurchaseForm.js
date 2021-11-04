@@ -1,83 +1,144 @@
-import React, { useState } from 'react'
-import { Skeleton, Form, Button, Input, Select, InputNumber, DatePicker } from 'antd'
+import React, { useEffect, useState } from 'react'
+import { Skeleton, Form, Button, Input, Select, InputNumber, DatePicker, Card, Table, message, Row, Col } from 'antd'
 import { useSelector } from 'react-redux';
-import { Divider } from 'rc-menu';
-import { MoneyCollectFilled } from '@ant-design/icons';
+import { ClearOutlined, MinusCircleFilled, MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import Column from 'rc-table/lib/sugar/Column';
+import moment from 'moment'
 const labelCols = {
     labelCol: {span: 6},
-    wrapperCOl: {span: 18}
+    wrapperCol: {span: 18}
 }
+
+const tailFormItemLayout = {
+    wrapperCol: {
+      xs: {
+        span: 24,
+        offset: 0,
+      },
+      sm: {
+        span: 16,
+        offset: 8,
+      },
+    },
+  };
 export const PurchaseForm = () => {
 
     const items_state = useSelector(state => state.items_state);
     const [form] = Form.useForm();
+    const [transaction_form] = Form.useForm();
+    const [total, setTotal] = useState(0);
+    const [item_transactions, setItemTransactions] = useState([]);
+
+    const [current_transaction, setCurrentTransaction] = useState(null);
+
+
     const onSubmit = transaction => {
+        if(!validateTransactionForms()){
+            return;
+        }
         console.log(transaction);
     }
-        const [current_quantity, setCurrentQuantity] = useState(0);
-        const [current_average, setCurrentAverage] = useState(0);
 
 
-        const onQuantityChange = (quantity_value) => {
-            setCurrentQuantity(quantity_value);
+    const validateTransactionForms = () => {
+        let is_valid = true;
+        item_transactions.forEach(trans => {
+            if(trans.item_id == null || trans.quantity == 0 || trans.average_price == 0){
+                is_valid = false;
+                message.warning({key: 'invalid_transaction', content: "Please fill all transactions first"});
+                return;
+            }
+        });
+
+        return is_valid;
+    }
+
+    const addItemTransaction = (transaction) => {
+        let _selected_item = items_state.items.data.find(item => item.id == transaction.item_id);
+        let _new_transaction = {
+            ...transaction,
+            key: moment().valueOf(),
+            item_name: _selected_item.name
         }
 
-        const onAverageChange = (value) => {
-            setCurrentAverage(value);
-        }
+        setItemTransactions([...item_transactions, _new_transaction]);
+        message.success({content: 'Item added', key: 'item_purchase'});
+        transaction_form.resetFields();
+    }
 
 
-    const [item_transactions, setItemTransactions] = useState([
-        {
-            item: null,
-            quantity: 0,
-            average_price: 0
-        }
-    ]);
+    const removeTransaction = key => {
+        setItemTransactions([...item_transactions.filter(trans => trans.key != key)]);
+        message.warning({content: 'Item removed', key: 'item_purchase'});
+    }
 
 
     const ItemTransactionForm = () => {
-
-        return <>
-        <Form.Item label="Item" name="item_id" rules={[{required: true, message: 'Item should be selected' }]}>
-                        <Select placeholder="Select item here">
+        return <Card type="inner" style={{marginTop: 10}}>
+            <Form layout="inline" form={transaction_form} onFinish={addItemTransaction}>
+                    <Form.Item label="Item" rules={[{required: true, message: 'Item should be selected' }]} name="item_id">
+                        <Select placeholder="Select item here" style={{width: '100%'}}>
                             {
                                 items_state.items.data.map((item, key) => <Select.Option key={item.id} value={item.id}>{item.name}</Select.Option>)
                             }
                         </Select>
                     </Form.Item>
-
-                    <Form.Item label="Quantity" name="quantity_average" >
-                        <Input.Group compact>
-                            <Form.Item style={{display: 'inline-block', width: '50%'}}>
-                                <InputNumber type="number" placeholder="ብዛት" name="quantity" value={current_quantity} onChange={onQuantityChange} />
-                            </Form.Item>
-                             <Form.Item style={{display: 'inline-block', width: '50%'}}>
-                                <InputNumber step="any" type="number" prefix={<span>$</span>} placeholder="price" name="average_price" onChange={onAverageChange} addonAfter={<MoneyCollectFilled />} />
-                            </Form.Item>
-                        </Input.Group>
+                    <Form.Item name="quantity" rules={[{required: true, message: 'Quantity can\'t be empty ' }]} >
+                        <InputNumber type="number" min="0" placeholder="Quanity"/>
                     </Form.Item>
-
-                    <Form.Item label="Total amount">
-                        <Input value={current_average * current_quantity} disabled  />
+                    <Form.Item name="average_price" rules={[{required: true, message: 'Average price can\'t be empty ' }]}>
+                        <InputNumber step="any" type="number" placeholder="Average price"/>
                     </Form.Item>
-        </>
+                    <Form.Item>
+                    <Button type="dashed" htmlType="submit" icon={<PlusOutlined />}>
+                        Add
+                        </Button>
+                    </Form.Item>
+            </Form>
+        </Card>
     }
+
+
+
     return (
         <Skeleton loading={items_state.new_transaction.loading}>
-            <Form form={form} onFinish={onSubmit} {...labelCols}>
-                    <Form.Item label="Fs Number" name="fs_number">
-                        <Input type="text" placeholder="Enter fs number here"  />
-                    </Form.Item>
-                    <Form.Item label="Reciept date" name="receipt_date">
-                        <Input type="text" placeholder="Enter receipt date here" />
-                    </Form.Item>
-                    <Divider  />
-                    {  
-                    }
-                <ItemTransactionForm  />
-                <Button type="primary" htmlType="submit">Save purchase information</Button>
-            </Form>
+            <Row>
+                <Col span={8}>
+                    <Form form={form} onFinish={onSubmit} {...labelCols}>
+
+                        <Form.Item label="Fs Number" name="fs_number">
+                            <Input type="text" placeholder="Enter fs number here"  />
+                        </Form.Item>
+                        <Form.Item label="Reciept date" name="receipt_date">
+                            <Input type="text" placeholder="Enter receipt date here" />
+                        </Form.Item>
+
+
+                        <Form.Item {...tailFormItemLayout}>
+                            <Button type="primary" htmlType="submit" disabled={item_transactions.length == 0}>Save purchase information</Button>
+                        </Form.Item>
+                    </Form>
+                </Col>
+                <Col span={15} offset={1}>
+                    <Table dataSource={item_transactions} rowKey="key" size="small" showHeader={false} bordered >
+                        <Column key="key" dataIndex="key" render={(key, item) => <>
+                            <Button type="text" style={{color: 'red'}} onClick={() =>removeTransaction(key)}>
+                                <MinusCircleOutlined />
+                            </Button>
+                        </>}/>
+                        <Column dataIndex="item_name" key="item_name" title="Name" />
+                        <Column dataIndex="quantity" key="quantity" title="Quantity"/>
+                        <Column dataIndex="average_price" key="average_price" title="Average price" />
+                        <Column title="Total" key="total" render={(trans) => <>{trans.quantity * trans.average_price}</>}/>
+                    </Table>
+                        {
+
+                        ItemTransactionForm()
+                        }
+
+                </Col>
+            </Row>
+
         </Skeleton>
     )
 }
